@@ -1,0 +1,53 @@
+\usepackage{tikz}
+
+%Color style
+\newcommand{\Orange}[1]{\textcolor{orange!80!black}{#1}}
+\newcommand{\Green}[1]{\textcolor{green!60!black}{#1}}
+\newcommand{\Red}[1]{\textcolor{red!60!black}{#1}}
+\newcommand{\Violet}[1]{\textcolor{violet!60!black!80}{#1}}
+\newcommand{\Purple}[1]{\textcolor{purple!80!gray}{#1}}
+\newcommand{\Blue}[1]{\textcolor{blue!80!black!80}{#1}}
+\newcommand{\Gray}[1]{\textcolor{gray}{#1}}
+
+\definecolor{lightblue}{rgb}{.90,.95,.85}
+\definecolor{darkblue}{rgb}{.07,.21,.41}
+\definecolor{darkorange}{rgb}{1,.5,.0}
+\definecolor{blackgreen}{rgb}{.0,.4,.2}
+\definecolor{darkgreen}{rgb}{.3,.7,.3}
+\sethlcolor{lightblue}
+%\sethlcolor{blue!20}
+\renewcommand<>{\hl}[1]{\only#2{\beameroriginal{\hl}}{#1}}
+\newcommand\SoulColor{%
+  \let\set@color\beamerorig@set@color
+  \let\reset@color\beamerorig@reset@color}
+\makeatother
+
+%FontStyle
+\newcommand{\itRoman}[1]{\em\rmfamily #1}
+\newcommand{\tinyFn}[1]{\footnote{\tiny #1}}
+\setbeamerfont{footnote}{size=\tiny}
+
+%Footnote in title frame
+\def\blfootnote{\xdef\@thefnmark{}\@footnotetext}
+
+%invisibility in beamer
+\tikzset{
+   invisible/.style={opacity=0},
+   visible on/.style={alt=#1{}{invisible}},
+   alt/.code args={<#1>#2#3}{%
+      \alt<#1>{\pgfkeysalso{#2}}{\pgfkeysalso{#3}} % \pgfkeysalso doesn't change the path
+   },
+}
+
+%section style
+\defbeamertemplate{section page}{mine}[1][]{%
+  \begin{centering}
+    {\usebeamerfont{section name}\usebeamercolor[fg]{section name}#1}
+    \vskip1em\par
+    \begin{beamercolorbox}[sep=12pt,center]{part title}
+      \usebeamerfont{section title}\insertsection\par
+    \end{beamercolorbox}
+  \end{centering}
+}
+
+

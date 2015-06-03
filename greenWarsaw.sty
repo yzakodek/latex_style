@@ -1,0 +1,35 @@
+\usetheme{Warsaw}
+\setbeamercolor*{title}{fg=green!30!black,bg=green!50!yellow!50}
+\setbeamercolor*{subtitle}{fg=orange!80!black!90,bg=green!50!yellow!50}
+\setbeamercolor*{palette primary}{use=structure,fg=orange!80!black!90,bg=green!50!yellow!50}
+\setbeamercolor*{palette quaternary}{fg=white,bg=green!30!black}
+\setbeamercolor*{section in toc}{fg=orange!80!black!90}
+\setbeamercolor*{section in toc}{fg=orange!80!black!90}
+
+\setbeamercolor{section number projected}{bg=green!30!black,fg=white}
+\setbeamercolor{item projected}{bg=green!30!black,fg=white}
+
+%Header configuration
+\setbeamertemplate{headline}{%
+\leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=\paperwidth,ht=2.5ex,dp=1.125ex]{palette quaternary}%
+    \insertsectionnavigationhorizontal{\paperwidth}{}{\hskip0pt plus1filll}
+    \end{beamercolorbox}%
+  }
+}
+
+%Page number
+\newcommand*\oldmacro{}%
+\let\oldmacro\insertshorttitle%
+\renewcommand*\insertshorttitle{%
+   \oldmacro\hfill%
+   \insertframenumber\,/\,\inserttotalframenumber}
+
+% Fancy box
+\tikzstyle{mybox} = [draw=orange, fill=green!50!yellow!50, very thick,rectangle, rounded corners, inner sep=10pt, inner ysep=10pt]
+\tikzstyle{fancytitle} =[fill=orange!90!black!90, text=white]
+
+%tikz marker
+\newcommand{\tikzmark}[1]{\tikz[overlay,remember picture] \node[baseline] (#1) {};}
+
