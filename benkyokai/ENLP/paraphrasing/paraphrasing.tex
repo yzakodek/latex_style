@@ -1,0 +1,474 @@
+%%!TEX encoding = UTF-8 Unicode
+\documentclass{beamer}
+\usepackage{soul}
+\usepackage{myStyle}
+\usepackage{greenWarsaw}
+\usefonttheme[onlymath]{serif}
+\usetikzlibrary{calc}
+\usetikzlibrary{shadows,shapes,decorations.markings}
+
+\usepackage{tabularx}
+
+\setbeamercovered{transparent}
+
+\title[Text Simplification LM]{Improving Text Simplification Language Modeling Using Unsimplified Text Data}
+\author{David Kauchak}
+\date{\today}
+
+\AtBeginSection{\frame{\sectionpage}}
+\setbeamertemplate{section page}[mine]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\frame{
+Goal:
+\begin{itemize}
+	\item Examine language modeling (LM) for text simplification
+	\item Determine if \Green{normal data} is useful for \Orange{simple LM} tasks
+\end{itemize}
+Result:
+\begin{itemize}
+	\item \Orange{Combining} simplified and normal English data for training is \Green{better} in perplexity and lexical simplification than a model trained on only simple data
+\end{itemize}
+}
+
+\section{Introduction}
+\frame{
+\frametitle{Introduction}
+\tikzstyle{thisbox} = [mybox,thick,inner sep=2pt,font=\footnotesize,inner ysep=1pt]
+
+\begin{tikzpicture}\centering
+	\node[mybox] (t1){source text};
+	\node[mybox,right of=t1, node distance=6cm,xshift=-1cm,] (t2){target text};
+	\node[single arrow,inner sep=1mm,fill=red!100!white!60,right of=t1, node distance=2.5cm,minimum width=0.5cm,minimum height=0.1cm] (arrow){\footnotesize translation};
+	\node [below of=t2, node distance=1.5cm] (lang2){!!! \textsc{lang model} !!!};
+	\node [below of=t2, text=red, node distance=1cm,minimum width=0.5cm] (sArrow){$\downarrow$};
+\end{tikzpicture}
+}
+
+\frame{
+\frametitle{Training language model}
+\hspace*{-1.0cm}
+\tikzstyle{thisbox} = [mybox,thick,inner sep=2pt,font=\footnotesize,inner ysep=1pt]
+
+\begin{tikzpicture}
+	\node [node distance=2cm, rectangle] (bilingual){Bilingual translation};
+	\node [thisbox,below of=bilingual, node distance=0.5cm,xshift=-1cm,] (lang1){Lang A};
+	\node [thisbox,right of=lang1, node distance=2cm] (lang2){Lang B};
+	\node [right of=lang1, text=red, node distance=1cm,minimum width=0.5cm] (sArrow){$\rightarrow$};
+	\node [below of=lang2, node distance=0.5cm,minimum width=0.5cm] (LM){\scriptsize Train LM};
+
+\onslide<1->{
+	\node [rectangle,right of=bilingual, node distance=6cm] (monolingual){\Orange{Monolingual} translation};
+	\node [thisbox,below of=monolingual, node distance=0.5cm,xshift=-1.cm] (lang){Lang A};
+	\node [thisbox,right of=lang, node distance=2cm] (lang2){Lang A};
+	\node [below of=lang2, node distance=0.5cm,minimum width=0.5cm] (LM){\scriptsize Train LM};
+	\node [right of=lang, text=red, node distance=1cm,minimum width=0.5cm] (sArrow){$\rightarrow$};
+}
+\only<2->{
+	\node [thisbox,fill=darkorange,below of=monolingual, node distance=0.5cm,xshift=-1.cm] (lang){Lang A};
+	\node [below of=lang, text=red, node distance=0.75cm,minimum width=0.5cm,rotate=90] (sArrow){$\dashrightarrow$};
+	\node [below of=lang, node distance=1.5cm,minimum width=0.5cm] (LM){\scriptsize Train LM ???};
+}
+\end{tikzpicture}\\
+}
+
+\frame{
+\frametitle{Goal: Justification}
+\begin{tikzpicture}
+	\node [mybox,node distance=2cm,minimum width=11cm, inner sep=2.5cm] (goal){};
+	\node [minimum width=0.5cm,yshift=2cm,xshift=-3.8cm] (goal){text simplification};
+	\node [rectangle,draw=darkgreen,below of=goal, node distance=1cm,minimum width=0.5cm,xshift=0.4cm] (simple){normal English text};
+	\node [rectangle,draw=darkgreen,right of=simple, node distance=6cm,minimum width=0.5cm] (normal){simplified English text};
+	\node [single arrow,fill=red,right of=simple, node distance=2.8cm,inner sep=1.5mm,minimum width=1cm,minimum height=1.5cm] (arrow){};
+\onslide<2->{
+	\node [below of=simple, node distance=2.5cm,minimum width=0.5cm,xshift=3cm] (simpleLM){simple English LM};
+	\draw [->, thick, red] (simple) to node[fill=green!50!yellow!50] {\Orange{\scriptsize training}} (simpleLM);
+	\draw [->, thick, red] (normal) to node[fill=green!50!yellow!50] {\Orange{\scriptsize training}} (simpleLM);
+}
+\end{tikzpicture}\\
+}
+
+\frame{
+\frametitle{Simple English wikipedia \& English wikipedia}
+\begin{itemize}
+	\item $n$-gram overlap proportions of 137K sentence pairs from \Green{Simple English} wikipedia \& \Orange{English} wikipedia (Coster \& Kauchack, 2011)
+		\begin{tabular}{l c c c c c}\hline
+			n-gram size: & 1 & 2 & 3 & 4 & 5 \\ \hline
+			simple in normal & 0.96 & 0.80 & 0.68 & 0.61 & 0.55 \\
+			normal in simple & 0.87 & 0.68 & 0.58 & 0.51 & 0.46 \\ \hline
+		\end{tabular}
+	\item<3> Correspondence between simple \& normal data
+\end{itemize}
+
+\onslide<2->{
+\begin{tikzpicture}[remember picture, overlay]
+	\node[rectangle,draw=darkgreen,darkgreen] (cnorm) at (0,3) {\tiny simple data};
+	\node[rectangle,draw=orange,orange] (cnorm) at (5.5,2.75) {\tiny normal data};
+\end{tikzpicture}
+
+\onslide<3->{
+\tikzstyle{venn} = [circle,thick,minimum width=3cm,opacity=0.4,text opacity=1]
+\begin{tikzpicture}
+         \node [venn, fill = darkgreen,minimum width=2.5cm,] (A) at (5,0) {};
+         \node [left of=A] (Atxt) {\scriptsize Simple data};
+         \node [venn, fill = darkorange] at (5.5,0) (B) {};
+         \node [right of=B] (Btxt) {\scriptsize Normal data};
+         \node [below of=A,node distance=2cm] (title) {\scriptsize Word level};
+
+         \node [venn, right of=B,minimum width=2.5cm, node distance=5cm,fill = darkgreen] (A2) {};
+         \node [left of=A2] (Atxt) {\scriptsize Simple data};
+         \node [venn, right of=A2, fill = darkorange]  (B2) {};
+         \node [right of=B2] (Btxt) {\scriptsize Normal data};
+         \node [below of=A2,node distance=2cm] (title) {\scriptsize $n$-gram};
+\end{tikzpicture}
+}}
+}
+
+\frame{
+\frametitle{Problems in text simplification}
+\begin{enumerate}
+	\item Simplified text data are \Green{available in reasonable size}, but \Green{not} for all monolingual translation tasks
+	\item The \Orange{quantity} of simple text data available are \Orange{limited}. \\ 
+		Results less than 500K \Green{sentences} from 60K \Green{articles} after preprocessing; smaller than normal English data
+	\item Language models for recent simplification system are \Green{trained only} on simplified data 
+\end{enumerate}
+Improvements in simple language modeling might improve the simplification  systems
+}
+
+\frame{
+\frametitle{Related work}
+\onslide<1>{
+\begin{itemize}
+	\item Suzuki \& Gao, 2005: Mixing simple and normal data is similar to LM domain adaptation if normal data are viewed as out-of-domain data
+	\item Rosenfeld, 1996: Adaptation techniques improved LM modeling performance; but no research examines LM domain adaptation problem for text simplification
+	\item Pan \& Yang, 2010: Survey on domain adaptation related problem for machine learning
+\end{itemize}
+}
+\onslide<2>{
+This paper: Explore some basic adaptation techniques.\\
+\begin{itemize}
+	\item Examine the relationship between simple and normal data
+	\item Determine whether normal data is helpful
+\end{itemize}
+}
+}
+
+\frame{
+\frametitle{Related work}
+\onslide<1>{
+\begin{itemize}
+%Simple LM work for some text simplification application
+	\item Zu+, 2010; Woodsend\&Lapata,2011; Coster\&Kauchack,2011; Wuben+,2012: statistical simplification techniques build model from MT and use a simple LM for simplification/ decoding 
+	\item Specia+, 2012: Simple English LM is used as predictive features in other simplification sub-problems 
+\end{itemize}
+}
+\onslide<2>{
+Data are limited:
+\begin{itemize}
+	\item A few research on LM in other monolingual translation domains
+	\item Text compression: most systems are trained on uncompressed data
+	\item Summarization: systems are trained on unsummarized text
+\end{itemize}
+}
+}
+
+\section{Corpus}
+\frame{
+\frametitle{Corpus}
+\begin{tabular}{l p{7cm}} \hline
+	Corpus & Description \\ \hline
+	Simple English & downloaded from all Simple English Wikipedia\\
+	& size: 60K simple articles \\
+	Normal English &Corresponding 60K normal articles from English Wikipedia \\
+	Test set & 2K article pairs \\ \hline
+\end{tabular}
+
+\vspace*{1cm}
+Corpus statistics:\\
+\begin{tabular}{l c c} \hline
+	& simple & normal \\ \hline
+	sentences & 385K & 2540K \\
+	words & 7.15K & 64.7M \\
+	sentences & 78K & 307K\\ \hline
+\end{tabular}
+}
+
+\section[Perplexity]{LM Evaluation: Perplexity}
+\frame{
+\frametitle{LM Evaluation: Perplexity}
+\tikzstyle{venn} = [circle,thick,minimum width=2cm,opacity=0.4,text opacity=1]
+\tikzstyle{thisbox} = [mybox,thick,inner sep=5pt,font=\footnotesize,inner ysep=3pt]
+\hspace*{-1.0cm}
+\begin{tikzpicture}
+	\node [venn, fill = darkgreen,minimum width=1.5cm,] (A) at (0,2) {};
+     \node [left of=A, xshift=1cm] (Atxt) {\scriptsize Simple data};
+	\node [single arrow,fill=red,inner sep=1.5mm,rotate=-90,minimum width=0.5cm,minimum height=1.2cm] (arrow) at (0,1){};
+     \node [thisbox,below of=A,node distance=2cm] (title) {\footnotesize  Vocabulary};
+
+\onslide<2->{
+     \node [node distance=3cm] (simptxt) at (7,3) {Training data};
+     \node [venn, fill = darkorange] at (4,2) (norm) {\scriptsize Normal data};
+     \node [venn, fill = darkgreen,minimum width=1.5cm] at (7,2) (simp) {};
+     \node [right of=norm,node distance=3cm] (simptxt) {\scriptsize Simple data};
+     \node [venn, fill = white] at (10,2) (B) {\scriptsize Combine data};
+	\filldraw[darkorange,opacity=0.5] (11,2) arc (0:-190:1cm);
+     \node [venn, fill = darkgreen,minimum width=1.5cm] at (10,2) (simp) {};
+}
+\onslide<3->{
+     \node [draw = darkgreen,visible on=<3->] (simptxt) at (4,-1) {\scriptsize Normal LM};
+     \node [draw = darkgreen,visible on=<3->] (simptxt) at (7,-1) {\scriptsize Simple LM};
+     \node [draw = darkgreen,visible on=<3->] (simptxt) at (10,-1) {\scriptsize Combine LMs};
+	\node [darkgreen] (simptxt) at (2,-1) {\scriptsize 3-gram};
+	\node [single arrow,visible on=<3->,fill=red,inner sep=1mm,rotate=-90,minimum width=0.5cm,minimum height=1.2cm] (arrow) at (4,0){};
+	\node [single arrow,visible on=<3->,fill=red,inner sep=1mm,rotate=-90,minimum width=0.5cm,minimum height=1.2cm] (arrow) at (7,0){};
+	\node [single arrow,visible on=<3->,fill=red,inner sep=1mm,rotate=-90,minimum width=0.5cm,minimum height=1.2cm] (arrow) at (10,0){};
+	\onslide<4->{\draw[line width=0.15mm,red,dashed,dash pattern=on 1mm off 0.5mm,decoration={markings,
+		   },postaction={decorate}] (1,0)--(11,0) node[xshift=-6cm] {\scriptsize based on the vocabulary};}
+
+	\onslide<5->{
+		\node [draw = darkgreen] (simptxt) at (7,-3) {\scriptsize Test data};
+		\draw[line width=0.15mm,red,dashed,dash pattern=on 1mm off 0.5mm,decoration={markings,mark=at position 1 with {\arrow[line width=0.1mm, scale= 1.5]{>}}},postaction={decorate}] (4,-1.5)--(6.9,-2.5) node[right] {};
+		\draw[line width=0.15mm,red,dashed,dash pattern=on 1mm off 0.5mm,decoration={markings,mark=at position 1 with {\arrow[line width=0.1mm, scale= 1.5]{>}}},postaction={decorate}] (7,-1.5)--(7,-2.5) node[right] {};
+		\draw[line width=0.15mm,red,dashed,dash pattern=on 1mm off 0.5mm,decoration={markings,mark=at position 1 with {\arrow[line width=0.1mm, scale= 1.5]{>}}},postaction={decorate}] (10,-1.5)--(7.1,-2.5) node[right] {};
+		\node [red] (simptxt) at (3,-2) {\scriptsize Evaluate on the perplexity$\rightarrow$};
+	}
+}
+\end{tikzpicture}\\
+}
+
+\frame{
+\frametitle{LM Evaluation: Results}
+\begin{center}
+	\includegraphics[trim=0.cm 0.2cm 0cm 0.2cm,clip=true,scale=0.75]{paraphrasingFig1.jpg}
+\end{center}
+\begin{tikzpicture}[remember picture, overlay]
+	\node[circle,draw=darkorange,thick,minimum width=0.5cm] (cnorm) at (3.1,4.3) {};
+\end{tikzpicture}
+}
+
+\frame{
+\frametitle{LM Evaluation: Results}
+\begin{center}
+	\includegraphics[trim=0.5cm 0.2cm 0cm 0.5cm,clip=true,scale=0.75]{paraphrasingFig2.jpg}
+\end{center}
+\begin{tikzpicture}[remember picture, overlay]
+	\node[circle,draw=darkorange,thick,minimum width=0.5cm] (cnorm) at (3.1,6.5) {};
+\end{tikzpicture}
+}
+
+\frame{
+\frametitle{LM Adaptation}
+\begin{itemize}
+	\item Investigate a linearly interpolated LM \\
+		$p_{interpolated}(w_i|w_{i-2},w_{i-1})=\lambda p_n(w_i|w_{i-2},w_{i-1})+(1-\lambda)p_s(w_i|w_{i-2},w_{i-1})$
+\end{itemize}
+\begin{center}
+	\includegraphics[trim=0cm 0.2cm 0cm 0.2cm,clip=true,scale=0.55]{paraphrasingFig3.jpg}
+\end{center}
+\begin{tikzpicture}[remember picture, overlay]
+	\node[circle,draw=darkorange,thick,minimum width=0.5cm] (cnorm) at (5.7,3) {};
+\end{tikzpicture}
+}
+
+\section[Lexical simplification]{LM Evaluation: Lexical simplification}
+\frame{
+\frametitle{LM Evaluation: Lexical simplification}
+\begin{itemize}
+	\item To evaluate the LM based on the \Green{lexical simplification} task
+	\item Lexical simplification: %sentence is simplified by substituting words or phrase in the sentence with ``simpler'' variations. This simplification improve readability of the text.
+
+\tikzstyle{venn} = [circle,thick,minimum width=2cm,opacity=0.4,text opacity=1]
+\begin{tikzpicture}
+	\node [venn, draw = darkgreen,minimum width=5.5cm,] (A) at (0,2) {};
+	\node [venn, fill = darkgreen,minimum width=0.5cm,] (A) at (-1,1) {\scriptsize W};
+	\node [venn, fill = darkorange,minimum width=0.5cm,] (A) at (-1,2) {\scriptsize P};
+	\node [venn, fill = darkorange,minimum width=0.5cm,] (A) at (1,0) {\scriptsize P};
+	\node [venn, fill = darkgreen,minimum width=0.5cm,] (A) at (2,1) {\scriptsize W};
+	\node [venn, fill = darkgreen,minimum width=0.5cm,] (A) at (0,4) {\scriptsize W};
+\only<1>{
+	\node [venn, fill = darkorange,minimum width=0.5cm,] (A) at (1,3) {\scriptsize P};
+	\node [venn, fill = darkgreen,minimum width=0.5cm,] (A) at (-1.5,3) {\scriptsize W};
+	\node [venn, fill = darkgreen,minimum width=0.5cm,] (A) at (0,2) {\scriptsize W};
+	\node [darkgreen] (stc) at (0,-1) {Normal sentences};
+}
+\only<2>{
+	\node [venn,fill = green!80!yellow!80,opacity=0.8,minimum width=0.5cm,] (A) at (1,3) {\scriptsize S};
+	\node [venn,fill = orange!80!black!80,opacity=0.8,minimum width=0.5cm,] (A) at (-1.5,3) {\scriptsize S};
+	\node [venn, fill = orange!80!black!80,opacity=0.8,minimum width=0.5cm,] (A) at (0,2) {\scriptsize S};
+     \node [darkorange,text width=4cm] (Atxt) at (5,2) {\small Readability is improved \tiny(Urano, 2000; Leroy+, 2012)};
+	\node [darkgreen] (stc) at (0,-1) {Simplified sentences};
+}
+\end{tikzpicture}\\
+\end{itemize}
+}
+
+\frame{
+\frametitle{Experiment setup}
+	\Orange{To rank} the candidate simplifications according to their simplicity in the context of the sentence\\
+	Example from SemEval 2012 daa set: \\
+	\scalebox{0.8}{
+	\begin{tabular}{l p{10cm}}  \hline
+		Word: & \em \Orange{tight} \\
+		Context: & With the physical market as {\bf \Orange{tight}} as it has been in memory, silver could fly at any time. \\
+		Candidates: & constricted, pressurised, low, high-strung, tight \\
+		Human ranking: & tight, low, constricted, pressurised, high-strung \\ \hline
+	\end{tabular}
+	}
+	
+	\vspace*{0.5cm}
+	Data sets: \\
+	\scalebox{0.8}{
+	\begin{tabular}{l c}  \hline
+		Development set & 300 \\ 
+		Test set & 1710 \\ \hline
+	\end{tabular}
+	}
+}
+
+\frame{
+\frametitle{Experiment setup}
+\begin{itemize}
+	\item Given LM $p(.)$ and lexical simplification example
+	\item Candidate simplification $r_j$ is scored by $p(s_1 \cdots s_{i-1} \text{ } r_j \text{ } s_{i+1} \cdots s_n)$ for each candidate\\
+		For example:
+		\scalebox{0.8}{
+		\begin{tabular}{l c l}  \hline
+			With the physical market as & \color{darkorange}{constricted} & as it has been ... \\ 
+				& \color{darkorange}{pressurised}  \\
+				&  \color{darkorange}{low} \\
+				&  \color{darkorange}{high-strung} \\
+				&  \color{darkorange}{low} \\
+				&  \color{darkorange}{tight} \\ \hline
+		\end{tabular}
+		}
+	\item Evaluation metric from SemEval 2012 task, Cohen's kappa between system \& human ranking
+	\item \SoulColor\hl{The same setup training as the PERPLEXITY experiment, but use} \Orange{open vocabulary}
+\end{itemize}
+}
+
+\frame{
+\frametitle{Results}
+\includegraphics[trim=0cm 0.4cm 0cm 0.6cm,clip=true,scale=0.7]{paraphrasingFig5.jpg}
+\onslide<2->{
+\begin{tikzpicture}[remember picture, overlay]
+	\node[ellipse,draw=darkorange,thick,minimum width=5cm,rotate=3] (cnorm) at (-3.7,5.4) {};
+	\node[darkorange,text width=4cm] (ctext) at (1,5) {\scriptsize Simply adding normal data to all simple data does not work for lexical simplifier};
+\end{tikzpicture}
+}}
+
+\frame{
+\frametitle{Results}
+To verify if additional normal data improve performance
+\begin{flushright}
+	\includegraphics[right,trim=0cm 0.2cm 0cm 0.6cm,clip=true,scale=0.7]{paraphrasingFig6.jpg}
+\end{flushright}
+\begin{tikzpicture}[remember picture, overlay]
+	\onslide<2->{
+		\node[ellipse,draw=darkorange,thick,minimum width=3cm,minimum height=1.5cm,rotate=45] (cnorm) at (5.5,6) {};
+		\node[darkorange,text width=3cm] (ctext) at (2,5) {\scriptsize For smaller amounts of simple data, adding normal data does improve performance};
+	}
+\end{tikzpicture}
+}
+
+\frame{
+\frametitle{Language model adaptation}
+Still, to verify if additional normal data improve performance \\
+Method: trained model with varying amounts of simple and normal data \\
+	\includegraphics[trim=0cm 0.2cm 0cm 0.6cm,clip=true,scale=0.6]{paraphrasingFig7.jpg}
+
+	\begin{tikzpicture}[remember picture, overlay]
+		\onslide<2->{
+			\node[ellipse,draw=darkgreen,thick,minimum width=5cm,rotate=4] (cnorm) at (4.3,5.8) {};
+			\node[ellipse,draw=darkorange,thick,minimum width=2cm] (cnorm) at (5,4) {};
+			\node[darkblue,text width=4cm] (ctext) at (8.5,4.5) {\scriptsize Even though the performance \Green{tends to converge}, a \Orange{modest amount of simple data} is required when combining with additional normal data to achieve \alert{reasonable performance}};
+		}
+	\end{tikzpicture}
+}
+
+\section[Discussion]{Why does normal data help?}
+\frame{
+\frametitle{More $n$-gram}
+\onslide<1>{
+Why normal data is \Orange{benefit}: \\
+\begin{itemize}
+	\item Adding normal data provides \Orange{additional} English data to train
+	\item Hypothesis: benefit of adding normal data $\rightarrow$ \Orange{access to more $n$-gram counts} (especially  unseen or low frequency $n$-grams)
+\end{itemize}
+}
+\onslide<2->{
+To \Green{validate} the hypothesis: \\
+\begin{itemize}
+	\item Examine \Green{$n$-gram overlap} between $n$-gram in the training and in the test sets
+\end{itemize}
+}
+}
+
+\frame{
+\frametitle{Results}
+\scriptsize Table 3: Proportion of \Orange{$n$-grams in the test sets} that \Orange{occur in} the simple and normal \Orange{training} data sets. \\
+\begin{tabular}{l c c c | c c c} \hline
+		& \multicolumn{3}{c|}{Perplexity test data} & \multicolumn{3}{c}{Lexical simplification} \\ \cline{2-7}
+		&  simple & normal & \% inc. & simple & normal & \% inc. \\ \hline
+	1-grams & 0.85 & 0.93 & 9.4\% & 0.74 & 0.78 & 6.2\% \\
+	2-grams & 0.66 & 0.82 & 24\% & 0.34 & 0.54 & 56\% \\
+	3-grams & 0.39 & 0.57 & 46\% & 0.088 & 0.19 & 117\% \\ \hline
+\end{tabular}\\
+}
+
+\frame{
+\frametitle{Role of normal data}
+	\scriptsize 
+	Table 4: Proportion of \Orange{n-grams in the test sets} that \Orange{occur in} the \Orange{combination} of both the simple and normal data. \\
+		\begin{tabular}{l c c | c c} \hline
+			& \multicolumn{2}{c|}{Perplexity test data} & \multicolumn{2}{c}{Lexical simplification} \\ \cline{2-5}
+			& simple + & \% inc. over & simple + & \% inc. over \\ 
+			& normal & normal & normal & normal \\ \hline
+			1-grams & 0.93 & \Green{0.2\%} & 0.78 & 0.0\% \\ 
+			2-grams & 0.83 & 0.8\% & 0.54 & 1.1\% \\
+			3-grams & 0.58 & 2.5\% & 0.20 & 2.6\% \\ \hline
+		\end{tabular} \\
+	
+	\begin{itemize}
+		\item Simple data adds \Green{small} coverage to normal data
+		\item Adding simple data to the normal data \Green{only increase} the \# of seen unigrams
+		\item Combined models perform \Orange{much better} than one trained only on normal data
+	\end{itemize}
+}
+
+\frame{
+\frametitle{Perplexity of aligned normal and simple data}
+To see normal data as out-of-domain data
+\begin{center}	
+	\includegraphics[trim=0cm 0.2cm 0cm 0cm,clip=true,scale=0.6]{paraphrasingFig8.jpg}
+\end{center}	
+}
+
+\frame{
+\frametitle{Balance between simple and normal}
+\begin{itemize}
+	\item The best perplexity results were obtained with lambda of $0.5$
+	\item For the simplification task, the optimal lambda value on development set was $0.98$ on simple model
+\end{itemize}
+}
+
+\section{Conclusion}
+\frame{
+\frametitle{Conclusion}
+\begin{itemize}
+	\item Normal data \Orange{improve} the performance of simple English LM
+	\item The \Orange{best} improvements are using \Orange{LM adaptation} technique. The role of normal data is based on the case
+	\item \Orange{Combining} a smaller amount of simple data with normal data achieve similar results as larger simple data set
+	\item Further research: 
+	\begin{enumerate}
+		\item Need to know the \Orange{limits} of adding out-of-domain data by an experiment with larger normal data sets
+		\item Investigate different data that may have \Orange{different domain}
+		\item How the LM performance will \Orange{impact} sentence-level simplification approaches
+	\end{enumerate}
+	\item This paper only investigates linearly interpolated LM. Other domain adaptation may produce better performance LM
+\end{itemize}
+}
+
+\end{document}
